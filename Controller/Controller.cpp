@@ -17,7 +17,7 @@ Controller::Controller(string host, int port, int kdNr, int anzZaehler)
 
 	//cin >> port_nr;
 	cout << endl;
-	port_nr = "3";
+	port_nr = "2";
 
 	string serieller_port("COM");
 	serieller_port += port_nr;
@@ -78,9 +78,11 @@ int* Controller::ablesenZaehler(int nr) {
 	cout << "Entferne STX, Prueffziffer und ETX         " << Controller::mitSteuerzeichen(daten) << endl; // Es sollten keine Steuerzeichen sichtbar sein!
 
 	// ToDo: Semikolons entfernen und in das int-Feld werte speichern
-	int wert[24] = { 0 };
+	int help = 0;
+	int werte[24] = { 0 };
 	for (int i = 0; i < 24; i++) {
-		wert[i] = daten[i] - '0';
+		werte[i] = stoi(daten.substr(help, daten.find(';', help)));
+		help = daten.find(';', help) + 1;
 	}
 	// Ausgabe
 	cout << "Wandel den String in ein Feld von Integern um		"; for (int i : werte) cout << i;
@@ -88,7 +90,7 @@ int* Controller::ablesenZaehler(int nr) {
 
 	// ToDo: Check Pruefziffer
 	int checksumRemote = nachricht[nachricht.size() - 2] - '0'; // checksumRemote aus nachricht entnehen; letzte Stelle
-	int checksumLocal = berechnePruefziffer(wert);  // checksumLocal aus daten lokal berechnen
+	int checksumLocal = berechnePruefziffer(werte);  // checksumLocal aus daten lokal berechnen
 	if (checksumLocal != checksumRemote) {
 		cout << "Pruefziffer falsch (lokal=" << checksumLocal
 			<< ", remote=" << checksumRemote << ")" << endl;
