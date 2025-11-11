@@ -11,7 +11,7 @@ public:
 	Date(void){}
 	Date(int day, int month, int year){}
 	Date(string date){}
-	~Date(void){}
+	~Date(void){};
 
 	bool equals(Date date){}
 	int compareTo(Date date){}
