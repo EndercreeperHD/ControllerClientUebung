@@ -22,8 +22,7 @@ Controller::Controller(string host, int port, int kdNr, int anzZaehler)
 	string serieller_port("COM");
 	serieller_port += port_nr;
 	controllerSerial = new Serial((string)serieller_port, 9600, 8, ONESTOPBIT, NOPARITY); // wurde im 1. Teil (Serial) in der main initialisiert
-
-	controllerSocket = nullptr;
+	controllerSocket = new Socket(host,port);
 	//Beispielwerte
 	this->anzZaehler = anzZaehler;
 	this->kdNr = kdNr;
@@ -34,19 +33,20 @@ Controller::Controller(string host, int port, int kdNr, int anzZaehler)
 Controller::~Controller(void)
 {
 	controllerSerial->close();
+	delete controllerSocket;
 	delete controllerSerial;
 }
 
 int* Controller::ablesenZaehler(int nr) {
 	cout << '\n' << "------------- Controller-------------" << endl;
-
 	// Anfrage: SOH | "READ" | STX | <nr ASCII> | ETX | '\n'
 	string auftrag;
 	auftrag += SOH;
 	auftrag += "READ";
 	auftrag += STX;
-	auftrag += to_string(nr);
+	auftrag += (nr);
 	auftrag += ETX;
+	auftrag += '\n';
 	// 1. Anfrage zusammenbauen
 	// 2. Anfrage an Stromzaehler senden
 	controllerSerial->write(auftrag);
@@ -65,7 +65,7 @@ int* Controller::ablesenZaehler(int nr) {
 		cout << "Kein STX gefunden! - Abbruch" << endl;
 		return nullptr;
 	}
-	if (nachricht[nachricht.size() - 1] != STX) {
+	if (nachricht[nachricht.size() - 1] != ETX) {
 		cout << "Kein ETX" << endl;
 		return nullptr;
 	}
@@ -112,7 +112,7 @@ int Controller::berechnePruefziffer(const int* werte) {
 			erg += werte[i] * 3;
 		}
 	}
-	return erg;
+	return erg%10;
 }
 
 // 2.3 Aufgabe
@@ -121,9 +121,8 @@ bool Controller::sendeTagesverbraeuche() {
 	bool ergebnis = false;
 
 	//a) Verbindung zur Seriellen aufnehmen
-	if (!controllerSerial->open()) {
-		cout << "Serial konnte nicht geoeffnet werden\n";
-		return false;
+	while (!controllerSerial->open()) {
+		cout << '.';
 	}
 
 	// b) für alle Zähler:
@@ -145,7 +144,7 @@ bool Controller::sendeTagesverbraeuche() {
 	Socket* controllerSocket = new Socket("127.0.0.1",54321);
 	if (!controllerSocket->connect()) return false;
 	Date d;
-	string zeile = "sende" + kdNr + d.getDay();
+	string zeile = std::string("sende ") + to_string(kdNr) + ' ' + to_string(d.getDay()) + ' ';
 	for (int i = 0; i < 24;i++) {
 		zeile += to_string(verbrauchHeute[i]) + ';';
 	}
@@ -161,7 +160,7 @@ bool Controller::sendeTagesverbraeuche() {
 	cout << "Kommando | K.Nr | Tag | addierte Verbrauchswerte pro Stunde | Pruefziffer" << endl;
 	cout << zeile << endl;
 	controllerSocket->close();
-
+	delete controllerSocket;
 	return true;
 }
 
